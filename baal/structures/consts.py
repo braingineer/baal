@@ -1,0 +1,2 @@
+INSERTION = "insertion"
+SUBSTITUTION = "substitution"
