@@ -7,3 +7,8 @@ from . import semantics
 
 
 from .hacks import nnp_transformer, cc_transformer
+
+import os
+PATH = os.path.dirname(os.path.realpath(__file__))
+
+OMNI = utils.DefaultSettings()
