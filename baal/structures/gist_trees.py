@@ -619,6 +619,33 @@ class DerivationTree(object):
 
         return out
 
+
+    def dcontext_roll_features(self):
+        """v3. mother-daughter roll features
+
+        roll up the trees; get the node+daughter head context
+        """
+        tree, _ = ConstituencyTree.make(bracketed_string=self.bracketed)
+        annotate = lambda t: (t.symbol, ("SUB" if t.complement 
+                                               else ("INS" if t.adjunct 
+                                                           else "SPINE")))
+        filter_ch = lambda c: c.E.head_symbol in [",", ":", ".", "``","''", "--"]
+        not_lex = lambda t: not tree.lexical
+        spine = [[(tree.symbol, self.direction)]]
+        while not_lex(tree):
+            if len(tree.children) == 1 and tree.children[0].lexical:
+                break
+            spine.append([annotate(c) for c in tree.children if not_lex(c)])
+            tree = tree.children[tree.spine_index]
+
+        hlf_info = (self.E.hlf_symbol, self.E.tree_operation.target['target_hlf'])
+        child_heads = [child.head for child in self.children]
+        out = [(self.head, spine, child_heads, self.bracketed, hlf_info)]
+        for child in self.children:
+            out.extend(child.dcontext_roll_features())
+
+        return out
+
     def rollout_learning_features(self):
         tree, _ = ConstituencyTree.make(bracketed_string=self.bracketed)
         safety = 0
@@ -1105,6 +1132,15 @@ class DerivationTree(object):
                 lexical.extend(tree.in_order_lexical())
         return lexical
 
+
+    def expanded_by_hlf(self, book=None):
+        if book is None:
+            self.expand_address()
+            book = {}
+        book[self.E.hlf_symbol] = self.expanded_address
+        for child in self.children:
+            book = child.expanded_by_hlf(book)
+        return book
 
 
     def make_expression(self, top=True):
