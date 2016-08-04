@@ -192,10 +192,10 @@ class Entry(object):
         return "Entry<%s>" % str(self.tree)
 
     def print_derived(self):
-        print "======\nDerived Operations\n-----"
+        print("======\nDerived Operations\n-----")
         for deriv in self.derived:
-            print deriv
-        print "======"
+            print(deriv)
+        print("======")
 
     def __eq__(self, other):
         return hash(self) == hash(other)

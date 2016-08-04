@@ -41,6 +41,11 @@ except:
     import pickle
 
 try:
+    range = xrange
+except:
+    pass
+
+try:
     input = raw_input
 except:
     pass
@@ -315,7 +320,7 @@ def _annotate(parent, children):
         # This is the lexical node.
         # Shouldn't be here though...
         children[0].head = children[0].symbol
-        raise ValueError, ("Shouldn't be here. tree_enrichment, lexical node",
+        raise ValueError("Shouldn't be here. tree_enrichment, lexical node",
                            "Unless.. Maybe we don't see only pre-terminals before leaves")
 
     if len(children)==1 and children[0].lexical:
@@ -529,7 +534,7 @@ def fix_spine(tree):
         if spine in tree.adjuncts:
             tree.adjuncts.remove(spine)
 
-hlf_gen = ("g{}".format(i) for i in xrange(10**10))       
+hlf_gen = ("g{}".format(i) for i in range(10**10))       
 def pp(tree):
     if len(repr(tree)) > 10:
         return "{}->{}...".format(tree.symbol, ", ".join([x.symbol for x in tree.children]))

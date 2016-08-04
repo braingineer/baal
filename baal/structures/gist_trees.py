@@ -184,6 +184,8 @@ class AttachmentOperation(object):
 
         return cls(target, type)
 
+        return cls(root_op, "", (0,), None, "(ROOT)",
+                   [root_subpoint], [], hlf_symbol="g-1")
 class ElementaryTree(object):
     """represent a tree fragment, its operations, and its internal addresses
     """
@@ -273,7 +275,7 @@ class ElementaryTree(object):
                                       consts.SUBSTITUTION)
         root_subpoint = AttachmentPoint(True, 'ROOT', (0,), consts.SUBSTITUTION, 0)
         root_subpoint.hlf_symbol = "g-1"
-        return cls(root_op, "", None, None, "(ROOT)",
+        return cls(root_op, "", (0,), None, "(ROOT)",
                    [root_subpoint], [], hlf_symbol="g-1")
 
 
@@ -335,6 +337,8 @@ class ElementaryTree(object):
         assert self.last_match.match(op)
         self.last_match.free = False
         match_gorn = self.last_match.gorn 
+        if self.hlf_symbol == 'g-1':
+            return match_gorn
         is_left = match_gorn < self.head_address
         for point in self.insertion_points:
             if point.gorn == match_gorn[:-1]:
@@ -508,6 +512,10 @@ class DerivationTree(object):
             return self.E.tree_operation.target['attach_direction']
         else:
             return "up"
+    
+    @property 
+    def tree_op(self):
+        return self.E.tree_operation
 
     @property
     def bracketed(self):
@@ -540,6 +548,13 @@ class DerivationTree(object):
             out.extend(child.lexical)
         return out
 
+    def target_gorn(self, adjust_insertion=True):
+        gorn = self.tree_op.target['target_gorn']
+        direction = self.tree_op.target['attach_direction']
+        if self.is_insertion and adjust_insertion:
+            gorn += ((-100 if direction == "left" else 100), )
+        return gorn
+        
     def accepts_op(self, other_tree):
         other_target = other_tree.E.tree_operation.target['pos_symbol']
         if other_tree.is_insertion:
@@ -645,10 +660,11 @@ class DerivationTree(object):
             out.extend(child.dcontext_roll_features())
 
         return out
-
-    def rollout_learning_features(self):
+        
+    def learning_features_july2016(self):
+        '''sequential choice model with a horizon and RTTN
+        '''
         tree, _ = ConstituencyTree.make(bracketed_string=self.bracketed)
-        safety = 0
         annotate = lambda t: (t.symbol, ("SUB" if t.complement 
                                                else ("INS" if t.adjunct 
                                                            else "SPINE")))
@@ -659,11 +675,8 @@ class DerivationTree(object):
                 break
             spine.append([annotate(c) for c in tree.children if not_lex(c)])
             tree = tree.children[tree.spine_index]
-            safety += 1
-            if safety == 100:
-                raise Exception("loop issue")
 
-        return [self.head, spine], self.bracketed
+        return self.head, spine
         
 
     def to_constituency(self):

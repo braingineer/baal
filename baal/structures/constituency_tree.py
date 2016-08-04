@@ -1,7 +1,7 @@
 from baal.utils.general import cprint, bcolors, cformat, nonstr_join
 from baal.utils import config
 from copy import copy, deepcopy
-import re, types, logging
+import re, logging
 try:
     from nltk.tree import Tree as TKTree
 except ImportError:
@@ -352,12 +352,12 @@ def from_string(in_str):
         assert len(stack[0][1]) == 1
         assert stack[0][0] is None
     except AssertionError as e:
-        print stack
-        print in_str
+        print(stack)
+        print(in_str)
         raise AssertionError
 
     resulting_tree = stack[0][1][0]
-    if isinstance(resulting_tree, types.ListType):
+    if isinstance(resulting_tree, list):
         resulting_tree = resulting_tree[0]
 
     assert isinstance(resulting_tree, ConstituencyTree)

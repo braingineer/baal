@@ -213,8 +213,8 @@ class bcolors:
 
 def cprint(x,levels=[0]):
     """ Deprecated for colorama """
-    print "".join([bcolors.index[str(level)]
-                   for level in levels]) + x + bcolors.ENDC
+    print("".join([bcolors.index[str(level)]
+                   for level in levels]) + x + bcolors.ENDC)
 
 
 def cformat(x, levels=[0]):
@@ -241,7 +241,7 @@ class easyc:
 
 
 def cprint_showcase():
-    print bcolors.BOLD + bcolors.UNDERLINE + "Options Showcase" + bcolors.ENDC
+    print(bcolors.BOLD + bcolors.UNDERLINE + "Options Showcase" + bcolors.ENDC)
     for name in bcolors.index.keys():
         cprint("Argument option: %s.  Effect shown." % name, [name])
 
@@ -265,4 +265,4 @@ class while_loop_manager(object):
         yield False
 
     def log(self):
-        print "Iteration %s: %d" % self.iter_i
+        print("Iteration %s: %d" % self.iter_i)
