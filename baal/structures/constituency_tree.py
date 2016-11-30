@@ -330,7 +330,7 @@ def from_string(in_str):
     stack = [(None, [])]
     for match in token_re.finditer(in_str):
         token, semantic = match.group(), ""
-        #if "-" in token and token[0] != '-' and in_str[match.start()-1] != " ": 
+        #if "-" in token and token[0] != '-' and in_str[match.start()-1] != " ":
         #    token, semantic = token.split("-")[0], token.split("-")[1]
 
         # Case: tree/subtree starting. prepare structure
@@ -386,7 +386,7 @@ def clean_tree(root_tree, address, addressbook):
         root_tree.symbol = root_tree.symbol.split("=")[0]
     if "|" in root_tree.symbol:
         root_tree.symbol = root_tree.symbol.split("|")[0]
-        
+
     if root_tree.symbol == "":
         print(root_tree, addressbook)
         return None, addressbook
@@ -397,9 +397,9 @@ def clean_tree(root_tree, address, addressbook):
     #### NOTES ON BAD OFFSET
     # to fix when bad children happen (aka, -None-)
     # I want to remove their tree. but this is tricky because its coupled
-    # with the spine_index 
+    # with the spine_index
     # so, i keep track of the bad offset, set the spine index to the correct val using it
-    # and then at the end, I update the list to be correct 
+    # and then at the end, I update the list to be correct
     for c_i, child in enumerate(root_tree.children):
         next_address = address+[c_i - bad_offset]
         if isinstance(child, ConstituencyTree):
@@ -408,13 +408,13 @@ def clean_tree(root_tree, address, addressbook):
             if '-NONE-' in child.symbol:
                 marked_bad.append(c_i)
                 bad_offset += 1
-                continue 
+                continue
 
             if len(child.children) > 0:
                 ### SPECIAL CASE:
                 ### basically, this can take out the None chidlren that happen in WSJ
-                if ( len(child.children) == 1 and 
-                     isinstance(child.children[0], ConstituencyTree) and 
+                if ( len(child.children) == 1 and
+                     isinstance(child.children[0], ConstituencyTree) and
                      "-NONE-" in child.children[0].symbol):
                     marked_bad.append(c_i)
                     bad_offset += 1
@@ -427,7 +427,7 @@ def clean_tree(root_tree, address, addressbook):
                     marked_bad.append(c_i)
                     bad_offset += 1
                     continue
-                
+
                 root_tree.children[c_i] = child
 
                 if child.head is not None:

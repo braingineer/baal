@@ -1,0 +1,192 @@
+from math import ceil, floor
+from copy import deepcopy
+
+
+### constants
+
+cdef char[4] NULL_HLF = "ginf"
+cdef tuple NULL_GORN = (-1,)
+
+cdef enum OP:
+    LEFT_INSERT_OP, RIGHT_INSERT_OP, SUBSTITUTE_OP
+
+cdef enum POINT:
+    SUBSTITUTE_POINT, INSERT_POINT
+
+
+
+# cdef char[4] LEFT_INSERT_OP = 'left'
+# cdef char[5] RIGHT_INSERT_OP = 'right'
+# cdef char[3] SUBSTITUTE_OP = 'sub'
+# cdef char[3] SUBSTITUTE_POINT = 'sub'
+# cdef char[3] INSERT_POINT = 'ins'
+
+cdef char[4] ROOT = "ROOT"
+cdef char[2] NP = "NP"
+cdef char[3] NNP = "NNP"
+cdef char[2] NN = "NN"
+
+cdef char[2] VP = "VP"
+cdef char[4] ADVP = "ADVP"
+
+cdef char[2] PP = "PP"
+cdef char[3] ADJ = "ADJ"
+
+# class POINTS:
+#     substitute = SUBSTITUTE_POINT
+#     insert = INSERT_POINT
+
+# class OPS:
+#     left_insert = LEFT_INSERT_OP
+#     right_insert = RIGHT_INSERT_OP
+#     substitute = SUBSTITUTE_OP
+
+class POS:
+    root = ROOT
+    np = NP
+    nnp = NNP
+    nn = NN
+    vp = VP
+    advp = ADVP;
+    pp = PP
+    adj = ADJ
+
+
+
+cdef class AttachmentPoint(object):
+    cdef public tuple gorn
+    cdef public object free
+    cdef public tuple frontier
+    cdef public float frontier_increment
+
+    cdef public char *pos_symbol
+    cdef POINT *pt_type
+
+    ### unsure about strings
+    cdef public char *hlf
+
+    def __cinit__(self):
+        self.frontier = (0.0, 0.0)
+        self.frontier_increment = 0.01
+        self.hlf = NULL_HLF
+
+    def __init__(self, free, char *pos_symbol, tuple gorn, POINT *pt_type):
+        self.free = free
+        self.gorn = gorn
+        self.pt_type = pt_type
+        self.pos_symbol = pos_symbol
+
+    @classmethod
+    def default(cls):
+        return cls(True, ROOT, (0,), SUBSTITUTE_OP)
+
+    @classmethod
+    def make(cls, pos=None, gorn=None, pt_type=None):
+        pos = pos or ROOT
+        gorn = gorn or NULL_GORN
+        pt_type = pt_type or SUBSTITUTE_POINT
+        return cls(True, pos, gorn, pt_type)
+
+    def __deepcopy__(self, memo):
+        print(*self.pt_type)
+        result = AttachmentPoint(self.free, self.pos_symbol, self.gorn, self.pt_type)
+        memo[id(self)] = result
+        result.frontier = self.frontier
+        result.frontier_increment = self.frontier_increment
+        result.hlf = self.hlf
+        return result
+
+    property left_insert:
+        def __get__(self):
+            self.frontier = (round(self.frontier[0] - self.frontier_increment, 2),
+                             self.frontier[1])
+            return self.frontier[0]
+
+        def __set__(self, x):
+            raise ValueError
+
+    property right_insert:
+        def __get__(self):
+            self.frontier = (self.frontier[0],
+                             round(self.frontier[1] + self.frontier_increment, 2))
+            return self.frontier[1]
+
+        def __set__(self, x):
+            raise ValueError
+
+    property left_sub:
+        def __get__(self):
+            self.frontier = (ceil(self.frontier[0]) - 1.0, self.frontier[1])
+            return self.frontier[0]
+
+        def __set__(self, x):
+            raise ValueError
+
+    property right_sub:
+        def __get__(self):
+            self.frontier = (self.frontier[0], floor(self.frontier[1]) + 1.0)
+            return self.frontier[1]
+
+        def __set__(self, x):
+            raise ValueError
+
+    cpdef match(self, op, verbose=0):
+        pos_match = self.pos_symbol == op.target.pos_symbol
+        gorn_match = (self.gorn == op.target.gorn or op.target.gorn == None)
+        hlf_match = self.hlf == op.target.hlf
+        #xor
+        type_match = ((self.pt_type == INSERT_POINT and op.is_insertion)
+                      or (self.pt_type == SUBSTITUTE_POINT and not op.is_insertion))
+
+        if verbose:
+            print("POS MATCH: {}".format(pos_match))
+            print("GORN MATCH: {}".format(gorn_match))
+            print("HLF MATCH: {}".format(hlf_match))
+            print("TYPE MATCH: {}".format(type_match))
+            print("--OP ATTACHMENT: {}".format(op.target.attach_direction))
+        return self.free and pos_match and gorn_match and hlf_match and type_match
+
+
+cdef class Target(object):
+    cdef public char *pos_symbol
+    cdef public tuple gorn
+    cdef public char *hlf
+    cdef OP *attach_direction
+    cdef public int is_insertion
+
+    def __init__(self, char *pos_symbol, OP *attach_direction, tuple gorn, char *hlf):
+        self.pos_symbol = pos_symbol
+        self.attach_direction = attach_direction
+        self.gorn = gorn
+        self.hlf = hlf
+
+        if (self.attach_direction == LEFT_INSERT_OP
+            or self.attach_direction == RIGHT_INSERT_OP):
+            self.is_insertion = 1
+        else:
+            self.is_insertion = 0
+
+cdef class AttachmentOperation(object):
+    cdef public Target target
+
+    def __init__(self, Target attach_target):
+        self.target = attach_target
+
+    property is_insertion:
+        def __get__(self):
+            if self.target.is_insertion:
+                return True
+            return False
+
+        def __set__(self, value):
+            raise ValueError
+
+
+
+#cdef AttachmentOperation GenerateOp(tree):
+
+cpdef AttachmentOperation MakeOp(OP *direction, char *pos_symbol):
+    if direction == SUBSTITUTE_OP:
+        return AttachmentOperation(Target(pos_symbol, SUBSTITUTE_OP, NULL_GORN, NULL_HLF))
+    else:
+        return AttachmentOperation(Target(pos_symbol, direction, NULL_GORN, NULL_HLF))
