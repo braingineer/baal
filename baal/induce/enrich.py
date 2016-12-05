@@ -50,7 +50,7 @@ try:
 except:
     pass
 
-__all__ = ["parse2derivation", "annotation_cut", "populate_annotations", 
+__all__ = ["parse2derivation", "annotation_cut", "populate_annotations",
            "string2cuts", "transform_tree", "get_trees"]
 
 
@@ -72,7 +72,7 @@ def debugrule(func):
         ind, suc = func(*args, **kwargs)
         if ind is not None:
             csel = cformat("{}".format(children[ind]),'f')
-        else: 
+        else:
             csel = cformat("None", "f")
         logger.debug("selecting {} at index {}; successful={}".format(csel, ind, suc))
         return ind, suc
@@ -138,15 +138,15 @@ class CollinsMethod(object):
         @debugrule
         def cc_context(children, headlist, parent):
             all_cc = {i:child for i,child in enumerate(children) if child.symbol=="CC"}
-            if len(all_cc) == 0: 
+            if len(all_cc) == 0:
                 return 0, False
-            
+
             cc_idx = sorted(all_cc.keys())[-1]
-            if cc_idx + 1 == len(children) or cc_idx == 0: 
+            if cc_idx + 1 == len(children) or cc_idx == 0:
                 return 0,False
 
-            L = lambda j: children[cc_idx+j] 
-            if L(1).symbol != parent.symbol: 
+            L = lambda j: children[cc_idx+j]
+            if L(1).symbol != parent.symbol:
                 return 0, False
             if (L(-1).symbol == L(1).symbol) or (L(-1).head in (",",";") and
                                                  L(-2).symbol == L(1).symbol):
@@ -264,7 +264,7 @@ class CollinsMethod(object):
                   and children[parent.head_index].symbol == "POS"):
                 child.complement = True
             elif CollinsMethod.ccs_are_hard(parent, c_i, children):
-                child.complement = True 
+                child.complement = True
             else:
                 child.complement = CollinsMethod.is_complement(parent, child)
         return children
@@ -287,7 +287,7 @@ class CollinsMethod(object):
 def transform_tree(tree):
     transformers = {"cc":baal.hacks.cc_transformer,
                     "nnp": baal.hacks.nnp_transformer,
-                    "projection": baal.hacks.projection_transformer}#, 
+                    "projection": baal.hacks.projection_transformer}#,
                     #"nnp": baal.nlp.hacks.nnp_merger}
     for name, transformer in transformers.items():
         before = tree.verbose_string(verboseness=4)
@@ -418,11 +418,11 @@ def mark_dependencies(parent, children):
     """
     children = CollinsMethod.mark_complements(parent, children)
     normal_head = lambda parent, c_i: parent.head_index == c_i
-    prn_head = lambda parent, c_i: (parent.symbol == "PRN" and 
-                                   (parent.head_index == c_i or 
+    prn_head = lambda parent, c_i: (parent.symbol == "PRN" and
+                                   (parent.head_index == c_i or
                                               c_i + 1 == len(parent.children)))
-    adjunct_condition = lambda child, parent, c_i: (not child.complement and 
-                                                    not normal_head(parent, c_i)) 
+    adjunct_condition = lambda child, parent, c_i: (not child.complement and
+                                                    not normal_head(parent, c_i))
                                                     #and not prn_head(parent, c_i))
     adjuncts = [child for c_i, child in enumerate(children)
                 if adjunct_condition(child, parent, c_i)]
@@ -471,7 +471,7 @@ def spine_collapse(tree):
         SC1 = tree.children[SI1] ## SPINE CHILD; LEVEL 1
         if SC1.lexical: return
         assert SC1.head == tree.head
-        if SC1.symbol == tree.symbol:   
+        if SC1.symbol == tree.symbol:
             #print("firing yes")
             LC1 = tree.children[:SI1]  ## LEFT CHILDREN ; LEVEL 1
             RC1 = tree.children[1+SI1:]  ## RIGHT CHILDREN ; LEVEL 1
@@ -480,7 +480,7 @@ def spine_collapse(tree):
             #    SC2 = [SC1.children[SI2]]  ## SPINE CHILD; LEVEL 2
             #    LC2 = SC1.children[:SI2] ## LEFT CHILDREN; LEVEL 2
             #    RC2 = SC1.children[1+SI2:] ## RIGHT CHILDREN; LEVEL 2
-            #else: 
+            #else:
             #    LC2, RC2, SC2 = [],[],[]
             #tree.children = LC1 + LC2 + SC2 + RC2 + RC1
             #print("NEW {} -> {} children [{}]".format(tree.symbol, len(tree.children), [c.symbol for c in tree.children]))
@@ -497,7 +497,7 @@ def spine_collapse(tree):
             #print("---"*10)
             #for k,v in tree.__dict__.items():
             #    print(k, v)
-            #print("=="*10) 
+            #print("=="*10)
     #new_c = []
     for child in tree.children:
         spine_collapse(child)
@@ -534,19 +534,19 @@ def fix_spine(tree):
         if spine in tree.adjuncts:
             tree.adjuncts.remove(spine)
 
-hlf_gen = ("g{}".format(i) for i in range(10**10))       
+hlf_gen = ("g{}".format(i) for i in range(10**10))
 def pp(tree):
     if len(repr(tree)) > 10:
         return "{}->{}...".format(tree.symbol, ", ".join([x.symbol for x in tree.children]))
     else:
-        return repr(tree) 
+        return repr(tree)
 
 def debug_print(*args):
     if baal.OMNI.VERBOSE:
         print(*args)
 
 def travel(tree, hlf=None, gorn=None, is_root=True):
-    hlf = hlf or next(hlf_gen)      
+    hlf = hlf or next(hlf_gen)
     out = [tree] if is_root else []
     left, right = [], []
     gorn = gorn or (0,)
@@ -556,19 +556,19 @@ def travel(tree, hlf=None, gorn=None, is_root=True):
     desc_str += "\n\t|children|={}; \n\t|subs|={}; \n\t|ins|={}"
     debug_print("####TRAVELSTART#####")
     debug_print("Tree={}".format(tree.save_str()))
-    debug_print(desc_str.format("Pre", tree.spine_index, 
+    debug_print(desc_str.format("Pre", tree.spine_index,
                           len(tree.children),
                           len(tree.substitutions),
                           len(tree.adjuncts)))
     fix_spine(tree)
-    debug_print(desc_str.format("Post", tree.spine_index, 
+    debug_print(desc_str.format("Post", tree.spine_index,
                           len(tree.children),
                           len(tree.substitutions),
                           len(tree.adjuncts)))
     if len(tree.children) == len(tree.substitutions) + len(tree.adjuncts) and len(tree.children)>0:
         debug_print("THERE IS A PROBLEM WITH THE SPINE")
     tree.self_hlf = hlf
-    
+
     if baal.OMNI.VERBOSE:
         ans = input("Start PDB? : ")
         if "y" == ans:
@@ -599,7 +599,7 @@ def travel(tree, hlf=None, gorn=None, is_root=True):
             #out += more_out
         elif child in tree.adjuncts:
             debug_print("Insertion condition")
-            subtree = baal.structures.ConstituencyTree(symbol=tree.symbol, 
+            subtree = baal.structures.ConstituencyTree(symbol=tree.symbol,
                                                             children=[deepcopy(child)])
             subtree.adjunct = True
             subtree.spine_index = 0
@@ -613,25 +613,25 @@ def travel(tree, hlf=None, gorn=None, is_root=True):
                 right.append(subtree)
             #subtree, more_out = travel(subtree)
             #out += more_out
-        
+
 
     tree.substitutions = []
     tree.adjuncts = []
     tree.children = [child for j, child in enumerate(tree.children) if j not in delete]
 
     left.reverse()
-    for subtree in left:        
+    for subtree in left:
         debug_print("---START------------------")
         debug_print("Left Enum={}".format(subtree.save_str()))
         subtree, more_out = travel(subtree)
         debug_print("Left Enum={}".format(subtree.save_str()))
         debug_print("---END------------------")
-        out += more_out  
+        out += more_out
 
     if tree.spine_index >= 0:
         debug_print("---START------------------")
         debug_print("Spine descent")
-        updated, more_out = travel(tree.children[tree.spine_index],hlf=tree.self_hlf, 
+        updated, more_out = travel(tree.children[tree.spine_index],hlf=tree.self_hlf,
                                    gorn=gorn+(tree.spine_index,),is_root=False)
         debug_print("---END------------------")
 
@@ -643,7 +643,7 @@ def travel(tree, hlf=None, gorn=None, is_root=True):
         subtree, more_out = travel(subtree)
         debug_print("Right enum:{}".format(subtree.save_str()))
         debug_print("--END-------------------")
-        out += more_out 
+        out += more_out
 
     debug_print("####TRAVELEND#####")
 
@@ -666,11 +666,16 @@ def rollout(path):
         dtree.operate(etree, True)
     return dtree
 
-def parse2derivation(parse):
+def parse2tree(parse):
     tree, addr = baal.structures.ConstituencyTree.make(bracketed_string=parse)
     populate_annotations(tree)
     spine_collapse(tree)
     final_tree, out = travel(tree)
+    return final_tree, out
+
+
+def parse2derivation(parse):
+    final_tree, out = parse2tree(parse)
     subtree_list = []
     for o in out:
         try:
@@ -684,12 +689,13 @@ def parse2derivation(parse):
 
 
 def string2cuts(instr):
-    tree = baal.structures.Entry.make(bracketed_string=instr).tree
-    if tree.symbol == "" and len(tree.children) == 1: 
-        tree.symbol = "ROOT"
-    populate_annotations(tree)
-    cuts = annotation_cut(tree)
-    return cuts
+    # tree = baal.structures.Entry.make(bracketed_string=instr).tree
+    # if tree.symbol == "" and len(tree.children) == 1:
+    #     tree.symbol = "ROOT"
+    # populate_annotations(tree)
+    # cuts = annotation_cut(tree)
+    return parse2tree(instr)[1]
+    #return cuts
 
 
 def get_trees(infile, use_tqdm=False):

@@ -1,33 +1,30 @@
 from __future__ import print_function
 import re
 
-cdef enum OPTYPE:
-    INSERT_LEFT, INSERT_RIGHT, SUBSTITUTE, LEXICAL, SPINE
 
-
-cdef set tag_exceptions = set(["-LRB-", "-RRB-", "-LSB-",
+tag_exceptions = set(["-LRB-", "-RRB-", "-LSB-",
                                 "-RSB-", "-LCB-", "-RCB-"])
 
 
+cdef dict opmap = {"insert_left": INSERT_LEFT,
+                   "insert_right": INSERT_RIGHT,
+                   "spine": SPINE,
+                   "sub": SUBSTITUTE,
+                   "lex": LEXICAL}
+
+cdef class TREEOP:
+    def __init__(self, OPTYPE optype=SPINE, tuple gorn=None, str hlf=None):
+        self.optype = optype
+        self.gorn = gorn
+        self.hlf = hlf
+
 cdef class Tree:
-    cdef public str symbol
-    cdef public str head
-    cdef list children
-    cdef int spine_index
-    cdef int iterator_index
-    cdef list iterator_object
-    cdef Tree parent
-    cdef OPTYPE op
-    cdef dict _addressbook
-    cdef tuple _gorn
-
-
-
     def __init__(self, str symbol, list children=None, Tree parent=None,
                        OPTYPE op=SUBSTITUTE):
         self.symbol = symbol
         self.parent = parent
-        self.op = op
+        self.op = TREEOP(op)
+        self.target = TREEOP()
         self.spine_index = -1
         self.iterator_index = -1
         if op == LEXICAL:
@@ -42,8 +39,23 @@ cdef class Tree:
 
 
     @classmethod
+    def remake(cls, Tree subtree, str opname="spine", Tree parent=None):
+        children = map(Tree.remake, subtree.children)
+        out = cls(subtree.symbol, children, parent, opmap[opname])
+        return out
+
+    @classmethod
     def lex(cls, str symbol, Tree parent):
         return cls(symbol, [], parent, LEXICAL)
+
+    @classmethod
+    def sub_site(cls, str symbol, Tree parent):
+        return cls(symbol, [], parent, SUBSITE)
+
+    @classmethod
+    def insertion_tree(cls, str symbol, str opname, list children):
+        out = cls(symbol, children, None, opmap[opname])
+        return out
 
     @classmethod
     def raw(cls, str symbol, list children, Tree parent):
@@ -70,6 +82,10 @@ cdef class Tree:
 
         return cls(symbol=symbol, children=children, op=op, parent=parent)
 
+    @classmethod
+    def from_string(cls, str in_str):
+        return from_string(in_str)
+
     property addressbook:
         def __get__(self):
             if self._addressbook == None:
@@ -94,8 +110,17 @@ cdef class Tree:
             for i, child in enumerate(self.children):
                 child.gorn = self._gorn + (i,)
 
+    @property
+    def is_lexical(self):
+        return self.op.optype == LEXICAL
+
+    cpdef set_op(self, op_name):
+        self.op.optype = opmap[op_name]
+
+
     def __str__(self):
-        if self.op == LEXICAL:
+        if self.op.optype == LEXICAL:
+            assert len(self.children) == 0
             return self.symbol
         return self.symbol + "[\t" + \
                 ",\n\t".join(map(str, self.children)) + "]"
@@ -213,9 +238,14 @@ cdef Tree clean_tree(Tree tree):
     return tree
 
 
+cpdef run_tests():
 
-if __name__ == "__main__":
     cdef str test_str = """(ROOT(S(NP (NNP Man))(VP (VBD dressed)(PP (IN in)(NP(NP (NN leather) (NNS chaps))(CC and)(NP (JJ purple) (NN -NONE-) (NNS stands))))(PP (IN in)(NP(NP (NN front))(PP (IN of)(NP (NNS onlookers))))))(. .)))"""
+
+    cdef str test_str2 = """(ROOT(S(NP(NP (DT The) (NN boy))(VP (VBG laying)(S(VP (VB face)(PRT (RP down))(PP (IN on)(NP (DT a) (NN skateboard)))))))(VP (VBZ is)(VP (VBG being)(VP (VBN pushed)(PP (IN along)(NP (DT the) (NN ground)))(PP (IN by)(NP (DT another) (NN boy))))))(. .)))"""
+
+    cdef Tree tree
+    cdef Tree t
 
     tree = from_string(test_str)
 
@@ -223,3 +253,14 @@ if __name__ == "__main__":
 
     for t in tree:
         print(t.gorn, t.symbol, t.head)
+
+
+    tree = from_string(test_str2)
+
+    print(tree)
+
+    for t in tree:
+        print(t.gorn, t.symbol, t.head)
+
+if __name__ == "__main__":
+    run_tests()

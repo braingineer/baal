@@ -345,7 +345,8 @@ def from_string(in_str):
                                      semantic=semantic))
         # Case: leaf node.
         else:
-            stack[-1][1].append(token)
+            if len(token) > 0:
+                stack[-1][1].append(token)
 
     try:
         assert len(stack) == 1
